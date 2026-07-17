@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Flights - TicketBooking</title>
+    <link rel="stylesheet" href="../common/styles.css">
+    <style>
+        .search-form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .flight-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        .flight-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .flight-info {
+            flex: 2;
+        }
+        .flight-price {
+            text-align: right;
+        }
+        .flight-airline {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .flight-time {
+            font-size: 14px;
+            color: var(--gray-color);
+        }
+        .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .book-btn {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../shared-pages/index.html" class="logo">✈️ TicketBooking</a>
+            <div class="nav-links">
+                <a href="search.html">Flights</a>
+                <a href="../train-bus/trains.html">Trains</a>
+                <a href="../train-bus/buses.html">Buses</a>
+                <a href="../shared-pages/my-bookings.html">My Bookings</a>
+                <a href="#" onclick="logout()">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="search-form">
+            <h2>Search Flights</h2>
+            <form id="searchForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>From</label>
+                        <input type="text" id="from" required placeholder="City or Airport">
+                    </div>
+                    <div class="form-group">
+                        <label>To</label>
+                        <input type="text" id="to" required placeholder="City or Airport">
+                    </div>
+                    <div class="form-group">
+                        <label>Departure Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Class</label>
+                        <select id="classType">
+                            <option value="ECONOMY">Economy</option>
+                            <option value="BUSINESS">Business</option>
+                            <option value="FIRST">First Class</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Search Flights</button>
+            </form>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+    
+    <script src="../common/utils.js"></script>
+    <script>
+        async function searchFlights(e) {
+            e.preventDefault();
+            
+            const from = document.getElementById('from').value;
+            const to = document.getElementById('to').value;
+            const date = document.getElementById('date').value;
+            const classType = document.getElementById('classType').value;
+            
+            // Convert date to LocalDateTime format
+            const searchDate = new Date(date);
+            searchDate.setHours(12, 0, 0);
+            const formattedDate = searchDate.toISOString();
+            
+            showLoading();
+            const result = await apiRequest(`/flights/search?from=${from}&to=${to}&date=${formattedDate}&classType=${classType}`);
+            hideLoading();
+            
+            const container = document.getElementById('results');
+            
+            if (result && result.success && result.data.data.length > 0) {
+                displayFlights(result.data.data);
+            } else {
+                container.innerHTML = '<div class="alert alert-info">No flights found for your search criteria.</div>';
+            }
+        }
+        
+        function displayFlights(flights) {
+            const container = document.getElementById('results');
+            container.innerHTML = `<h3>Found ${flights.length} flights</h3>` + 
+                flights.map(flight => `
+                    <div class="flight-card">
+                        <div class="flight-info">
+                            <div class="flight-airline">${flight.airline} - ${flight.flightNumber}</div>
+                            <div><strong>${flight.fromCity}</strong> → <strong>${flight.toCity}</strong></div>
+                            <div class="flight-time">
+                                Depart: ${formatDate(flight.departureTime)}<br>
+                                Arrive: ${formatDate(flight.arrivalTime)}<br>
+                                Duration: ${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m
+                            </div>
+                            <div>Available Seats: ${flight.availableSeats}</div>
+                        </div>
+                        <div class="flight-price">
+                            <div class="price">${formatCurrency(flight.price)}</div>
+                            <button class="btn btn-primary book-btn" onclick="bookFlight(${flight.id})">Book Now</button>
+                        </div>
+                    </div>
+                `).join('');
+        }
+        
+        async function bookFlight(flightId) {
+            if (!isLoggedIn()) {
+                showAlert('Please login to book tickets', 'error');
+                window.location.href = '../shared-pages/login.html';
+                return;
+            }
+            
+            const seats = prompt('Enter number of seats:', '1');
+            if (!seats) return;
+            
+            const bookingData = {
+                transportType: 'FLIGHT',
+                transportId: flightId,
+                numberOfSeats: parseInt(seats),
+                seatNumbers: Array(parseInt(seats)).fill().map((_, i) => String.fromCharCode(65 + i) + '1').join(',')
+            };
+            
+            showLoading();
+            const result = await apiRequest('/bookings', {
+                method: 'POST',
+                body: JSON.stringify(bookingData)
+            });
+            hideLoading();
+            
+            if (result && result.success) {
+                showAlert('Booking created! Proceed to payment.', 'success');
+                localStorage.setItem('pendingBooking', JSON.stringify(result.data.data));
+                window.location.href = '../shared-pages/payment.html';
+            } else {
+                showAlert('Booking failed: ' + (result?.data?.message || 'Unknown error'), 'error');
+            }
+        }
+        
+        function logout() {
+            removeAuthToken();
+            window.location.href = '../shared-pages/index.html';
+        }
+        
+        // Set default date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('date').value = tomorrow.toISOString().split('T')[0];
+        
+        document.getElementById('searchForm').addEventListener('submit', searchFlights);
+        
+        // Check login status
+        if (!isLoggedIn()) {
+            showAlert('Please login to book flights', 'info');
+        }
+    </script>
+</body>
+</html>
+</textarea>
+

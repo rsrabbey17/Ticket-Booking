@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketBooking - Book Flights, Trains & Buses Online</title>
+    <link rel="stylesheet" href="../common/styles.css">
+
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="logo">🎫 TicketBooking</a>
+            <div class="nav-links">
+                <a href="../air-tickets/search.html">✈️ Flights</a>
+                <a href="../train-bus/trains.html">🚂 Trains</a>
+                <a href="../train-bus/buses.html">🚌 Buses</a>
+                <a href="my-bookings.html" id="myBookingsLink" style="display:none;">📋 My Bookings</a>
+                <a href="login.html" id="loginLink">🔑 Login</a>
+                <a href="register.html" id="registerLink">📝 Register</a>
+                <a href="#" id="logoutLink" style="display:none;" onclick="logout()">🚪 Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <main>
+        <div class="container">
+            <!-- Hero Section -->
+            <div class="hero">
+                <h1>Your Journey Begins Here</h1>
+                <p>Book flights, trains, and buses at the best prices with exclusive offers</p>
+                <div class="cta-buttons" style="background: transparent; padding: 0;">
+                    <a href="../air-tickets/search.html" class="btn btn-primary">Book Flights</a>
+                    <a href="../train-bus/trains.html" class="btn btn-secondary">Book Trains</a>
+                    <a href="../train-bus/buses.html" class="btn btn-outline" style="background: white;">Book Buses</a>
+                </div>
+            </div>
+            
+            <!-- Transport Options -->
+            <div class="transport-section">
+                <h2 class="section-title">Choose Your Transport</h2>
+                <div class="transport-options">
+                    <a href="../air-tickets/search.html" class="transport-card">
+                        <div class="transport-icon">✈️</div>
+                        <h3>Flights</h3>
+                        <p>Book domestic & international flights with best deals</p>
+                        <div class="price-tag">Starting from BDT 10,999/-</div>
+                    </a>
+                    
+                    <a href="../train-bus/trains.html" class="transport-card">
+                        <div class="transport-icon">🚂</div>
+                        <h3>Trains</h3>
+                        <p>Book train tickets across India with easy cancellation</p>
+                        <div class="price-tag">Starting from BDT 149/-</div>
+                    </a>
+                    
+                    <a href="../train-bus/buses.html" class="transport-card">
+                        <div class="transport-icon">🚌</div>
+                        <h3>Buses</h3>
+                        <p>Comfortable bus journeys with AC, Sleeper options</p>
+                        <div class="price-tag">Starting from BDT 249/-</div>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Features Section -->
+            <div class="features-section">
+                <h2 class="section-title">Why Choose Us?</h2>
+                <div class="features">
+                    <div class="feature">
+                        <div class="feature-icon">💰</div>
+                        <h3>Best Price Guarantee</h3>
+                        <p>Get the best prices on all bookings with price match promise</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🛡️</div>
+                        <h3>Secure Booking</h3>
+                        <p>Safe & secure payment gateway with multiple options</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🎧</div>
+                        <h3>24/7 Support</h3>
+                        <p>Customer support anytime, anywhere via chat & phone</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🔄</div>
+                        <h3>Easy Cancellation</h3>
+                        <p>Cancel bookings online with instant refund</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Section -->
+            <div class="stats-section">
+                <h2 class="section-title" style="color: white;">Trusted by Millions</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number" id="customerCount">50K+</div>
+                        <div class="stat-label">Happy Customers</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="cityCount">200+</div>
+                        <div class="stat-label">Cities Covered</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="bookingCount">10K+</div>
+                        <div class="stat-label">Daily Bookings</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="partnerCount">500+</div>
+                        <div class="stat-label">Transport Partners</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Offers Section -->
+            <div class="offers-section">
+                <h2 class="section-title">Exclusive Offers</h2>
+                <div class="offers-grid">
+                    <div class="offer-card" onclick="showAlert('Use code FLY20 at checkout', 'info')">
+                        <div class="offer-icon">✈️</div>
+                        <div class="offer-content">
+                            <div class="offer-title">20% OFF on First Flight Booking</div>
+                            <div class="offer-desc">Use code: <span class="offer-code">FLY20</span></div>
+                        </div>
+                    </div>
+                    <div class="offer-card" onclick="showAlert('Use code TRAIN15 at checkout', 'info')">
+                        <div class="offer-icon">🚂</div>
+                        <div class="offer-content">
+                            <div class="offer-title">15% OFF on Train Tickets</div>
+                            <div class="offer-desc">Use code: <span class="offer-code">TRAIN15</span></div>
+                        </div>
+                    </div>
+                    <div class="offer-card" onclick="showAlert('Use code BUS10 at checkout', 'info')">
+                        <div class="offer-icon">🚌</div>
+                        <div class="offer-content">
+                            <div class="offer-title">10% OFF on Bus Bookings</div>
+                            <div class="offer-desc">Use code: <span class="offer-code">BUS10</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Testimonials Section -->
+            <div class="testimonials-section">
+                <h2 class="section-title">What Our Customers Say</h2>
+                <div class="testimonials-grid">
+                    <div class="testimonial-card">
+                        <div class="testimonial-avatar">👨</div>
+                        <div class="testimonial-text">"Great experience! Booked flight tickets with ease. The interface is very user-friendly."</div>
+                        <div class="testimonial-name">RS Rabbey</div>
+                        <div class="testimonial-rating">★★★★★</div>
+                    </div>
+                    <div class="testimonial-card">
+                        <div class="testimonial-avatar">👨</div>
+                        <div class="testimonial-text">"Best platform for train booking. Got instant confirmation and great support."</div>
+                        <div class="testimonial-name">Jihad Hasan</div>
+                        <div class="testimonial-rating">★★★★★</div>
+                    </div>
+                    <div class="testimonial-card">
+                        <div class="testimonial-avatar">👨</div>
+                        <div class="testimonial-text">"Bus tickets at cheapest rates. The seat selection feature is very helpful."</div>
+                        <div class="testimonial-name">Md. Mehedi</div>
+                        <div class="testimonial-rating">★★★★☆</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CTA Section -->
+            <div class="cta-section">
+                <h2>Ready to Start Your Journey?</h2>
+                <p>Join thousands of happy travelers who book with us every day</p>
+                <div class="cta-buttons">
+                    <button class="btn btn-primary" onclick="if(!isLoggedIn()) window.location.href='register.html'; else window.location.href='my-bookings.html'">
+                        Get Started
+                    </button>
+                    <button class="btn btn-outline" onclick="showAlert('Call us at 1800-123-4567', 'info')">
+                        Contact Support
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile App Banner -->
+            <div class="app-banner">
+                <div class="app-content">
+                    <h3>Download Our App</h3>
+                    <p>Get exclusive app-only offers and seamless booking experience</p>
+                    <div class="app-buttons">
+                        <a href="#" class="app-button" onclick="showAlert('App download link will be available soon', 'info')">
+                            📱 Google Play
+                        </a>
+                        <a href="#" class="app-button" onclick="showAlert('App download link will be available soon', 'info')">
+                            🍎 App Store
+                        </a>
+                    </div>
+                </div>
+                <div class="qr-code">
+                    <div style="width: 120px; height: 120px; background: var(--light-color); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        📱
+                    </div>
+                    <p style="margin-top: 0.5rem; font-size: 0.8rem;">Scan to Download</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer style="background: var(--dark-color); color: white; padding: 3rem 2rem 1rem; margin-top: 3rem;">
+        <div class="container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                <div>
+                    <h3 style="color: white; margin-bottom: 1rem;">About Us</h3>
+                    <p style="opacity: 0.8;">TicketBooking is Bangladesh leading online travel platform offering flights, trains, and bus tickets at best prices.</p>
+                </div>
+                <div>
+                    <h3 style="color: white; margin-bottom: 1rem;">Quick Links</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li><a href="../air-tickets/search.html" style="color: white; opacity: 0.8;">Flight Booking</a></li>
+                        <li><a href="../train-bus/trains.html" style="color: white; opacity: 0.8;">Train Booking</a></li>
+                        <li><a href="../train-bus/buses.html" style="color: white; opacity: 0.8;">Bus Booking</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 style="color: white; margin-bottom: 1rem;">Support</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li><a href="#" style="color: white; opacity: 0.8;">Help Center</a></li>
+                        <li><a href="#" style="color: white; opacity: 0.8;">Terms & Conditions</a></li>
+                        <li><a href="#" style="color: white; opacity: 0.8;">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 style="color: white; margin-bottom: 1rem;">Contact Us</h3>
+                    <p style="opacity: 0.8;">📧 support@ticketbooking.com</p>
+                    <p style="opacity: 0.8;">📞 +880 1712345689</p>
+                </div>
+            </div>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;">
+            <p style="text-align: center; opacity: 0.6;">&copy; 2026 TicketBooking. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <script src="../common/utils.js"></script>
+    <script>
+        // Update navigation based on login status
+        function updateNavigation() {
+            const token = getAuthToken();
+            if (token) {
+                const loginLink = document.getElementById('loginLink');
+                const registerLink = document.getElementById('registerLink');
+                const logoutLink = document.getElementById('logoutLink');
+                const myBookingsLink = document.getElementById('myBookingsLink');
+                
+                if (loginLink) loginLink.style.display = 'none';
+                if (registerLink) registerLink.style.display = 'none';
+                if (logoutLink) logoutLink.style.display = 'inline';
+                if (myBookingsLink) myBookingsLink.style.display = 'inline';
+                
+                // Show welcome message if user is logged in
+                const user = getCurrentUser();
+                if (user && user.fullName) {
+                    showAlert(`Welcome back, ${user.fullName}!`, 'success');
+                }
+            } else {
+                const loginLink = document.getElementById('loginLink');
+                const registerLink = document.getElementById('registerLink');
+                const logoutLink = document.getElementById('logoutLink');
+                const myBookingsLink = document.getElementById('myBookingsLink');
+                
+                if (loginLink) loginLink.style.display = 'inline';
+                if (registerLink) registerLink.style.display = 'inline';
+                if (logoutLink) logoutLink.style.display = 'none';
+                if (myBookingsLink) myBookingsLink.style.display = 'none';
+            }
+        }
+        
+        // Logout function
+        function logout() {
+            removeAuthToken();
+            updateNavigation();
+            showAlert('Logged out successfully!', 'success');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+        }
+        
+        // Animated counter for stats
+        function animateCounter(element, target) {
+            let current = 0;
+            const increment = target / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target + '+';
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current) + '+';
+                }
+            }, 20);
+        }
+        
+        // Trigger animations when stats come into view
+        const observerOptions = {
+            threshold: 0.5
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const customerCount = document.getElementById('customerCount');
+                    const cityCount = document.getElementById('cityCount');
+                    const bookingCount = document.getElementById('bookingCount');
+                    const partnerCount = document.getElementById('partnerCount');
+                    
+                    if (customerCount && customerCount.textContent === '50K+') {
+                        animateCounter(customerCount, 50000);
+                        animateCounter(cityCount, 200);
+                        animateCounter(bookingCount, 10000);
+                        animateCounter(partnerCount, 500);
+                    }
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+        
+        const statsSection = document.querySelector('.stats-section');
+        if (statsSection) {
+            observer.observe(statsSection);
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNavigation();
+        });
+    </script>
+</body>
+</html>

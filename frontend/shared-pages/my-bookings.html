@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - TicketBooking</title>
+    <link rel="stylesheet" href="../common/styles.css">
+    <style>
+        .booking-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .booking-ref {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .booking-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-confirmed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .booking-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: var(--gray-color);
+        }
+        .cancel-btn {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            background: white;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="logo">✈️ TicketBooking</a>
+            <div class="nav-links">
+                <a href="../air-tickets/search.html">Flights</a>
+                <a href="../train-bus/trains.html">Trains</a>
+                <a href="../train-bus/buses.html">Buses</a>
+                <a href="my-bookings.html">My Bookings</a>
+                <a href="#" onclick="logout()">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h1>My Bookings</h1>
+        <div id="bookingsList"></div>
+    </div>
+    
+    <script src="../common/utils.js"></script>
+    <script>
+        async function loadBookings() {
+            if (!isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            showLoading();
+            const result = await apiRequest('/bookings/my-bookings');
+            hideLoading();
+            
+            const container = document.getElementById('bookingsList');
+            
+            if (result && result.success && result.data.data.length > 0) {
+                displayBookings(result.data.data);
+            } else {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No bookings found</h3>
+                        <p>You haven't made any bookings yet.</p>
+                        <a href="../air-tickets/search.html" class="btn btn-primary">Book Now</a>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayBookings(bookings) {
+            const container = document.getElementById('bookingsList');
+            container.innerHTML = bookings.map(booking => `
+                <div class="booking-card">
+                    <div class="booking-header">
+                        <span class="booking-ref">${booking.bookingReference}</span>
+                        <span class="booking-status status-${booking.status.toLowerCase()}">${booking.status}</span>
+                    </div>
+                    <div class="booking-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Transport:</span>
+                            <span>${booking.transportType}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">From:</span>
+                            <span>${booking.fromLocation}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">To:</span>
+                            <span>${booking.toLocation}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Travel Date:</span>
+                            <span>${formatDate(booking.travelDate)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Seats:</span>
+                            <span>${booking.numberOfSeats}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Total Price:</span>
+                            <span>${formatCurrency(booking.totalPrice)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Payment Status:</span>
+                            <span>${booking.paymentStatus}</span>
+                        </div>
+                    </div>
+                    ${booking.status === 'CONFIRMED' ? 
+                        `<button class="cancel-btn" onclick="cancelBooking(${booking.id})">Cancel Booking</button>` : 
+                        ''}
+                </div>
+            `).join('');
+        }
+        
+        async function cancelBooking(bookingId) {
+            if (confirm('Are you sure you want to cancel this booking?')) {
+                showLoading();
+                const result = await apiRequest(`/bookings/${bookingId}`, { method: 'DELETE' });
+                hideLoading();
+                
+                if (result && result.success) {
+                    showAlert('Booking cancelled successfully!', 'success');
+                    loadBookings();
+                } else {
+                    showAlert('Failed to cancel booking', 'error');
+                }
+            }
+        }
+        
+        function logout() {
+            removeAuthToken();
+            window.location.href = 'index.html';
+        }
+        
+        // Check login on page load
+        if (!isLoggedIn()) {
+            window.location.href = 'login.html';
+        } else {
+            loadBookings();
+        }
+    </script>
+</body>
+</html>

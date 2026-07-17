@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - TicketBooking</title>
+    <link rel="stylesheet" href="../common/styles.css">
+    <style>
+        .payment-container {
+            max-width: 600px;
+            margin: 50px auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        .booking-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .payment-form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .payment-methods {
+            margin: 20px 0;
+        }
+        .payment-method {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .payment-method:hover {
+            border-color: var(--primary-color);
+        }
+        .payment-method input {
+            margin-right: 10px;
+        }
+        .payment-method label {
+            cursor: pointer;
+            flex: 1;
+        }
+        .total-amount {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="logo">✈️ TicketBooking</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h1>Complete Payment</h1>
+        <div class="payment-container">
+            <div class="booking-summary" id="bookingSummary"></div>
+            <div class="payment-form">
+                <h3>Payment Details</h3>
+                <div class="payment-methods">
+                    <h4>Select Payment Method</h4>
+                    <div class="payment-method">
+                        <input type="radio" name="paymentMethod" value="CREDIT_CARD" id="creditCard" checked>
+                        <label for="creditCard">💳 Credit Card</label>
+                    </div>
+                    <div class="payment-method">
+                        <input type="radio" name="paymentMethod" value="DEBIT_CARD" id="debitCard">
+                        <label for="debitCard">💳 Debit Card</label>
+                    </div>
+                    <div class="payment-method">
+                        <input type="radio" name="paymentMethod" value="UPI" id="upi">
+                        <label for="upi">📱 UPI (Google Pay, PhonePe, etc.)</label>
+                    </div>
+                    <div class="payment-method">
+                        <input type="radio" name="paymentMethod" value="NET_BANKING" id="netBanking">
+                        <label for="netBanking">🏦 Net Banking</label>
+                    </div>
+                </div>
+                
+                <div class="total-amount" id="totalAmount"></div>
+                
+                <button class="btn btn-primary" style="width: 100%;" onclick="processPayment()">
+                    Pay Now
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../common/utils.js"></script>
+    <script>
+        let booking = null;
+        
+        function loadBooking() {
+            const bookingData = localStorage.getItem('pendingBooking');
+            if (!bookingData) {
+                showAlert('No booking found!', 'error');
+                window.location.href = '../air-tickets/search.html';
+                return;
+            }
+            
+            booking = JSON.parse(bookingData);
+            
+            document.getElementById('bookingSummary').innerHTML = `
+                <h3>Booking Summary</h3>
+                <div class="detail-item">
+                    <strong>Booking Reference:</strong> ${booking.bookingReference}
+                </div>
+                <div class="detail-item">
+                    <strong>Transport:</strong> ${booking.transportType}
+                </div>
+                <div class="detail-item">
+                    <strong>From:</strong> ${booking.fromLocation}
+                </div>
+                <div class="detail-item">
+                    <strong>To:</strong> ${booking.toLocation}
+                </div>
+                <div class="detail-item">
+                    <strong>Travel Date:</strong> ${formatDate(booking.travelDate)}
+                </div>
+                <div class="detail-item">
+                    <strong>Number of Seats:</strong> ${booking.numberOfSeats}
+                </div>
+                <div class="detail-item">
+                    <strong>Seat Numbers:</strong> ${booking.seatNumbers}
+                </div>
+            `;
+            
+            document.getElementById('totalAmount').innerHTML = formatCurrency(booking.totalPrice);
+        }
+        
+        async function processPayment() {
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            
+            showLoading();
+            const result = await apiRequest('/bookings/pay', {
+                method: 'POST',
+                body: JSON.stringify({
+                    bookingId: booking.id,
+                    paymentMethod: paymentMethod
+                })
+            });
+            hideLoading();
+            
+            if (result && result.success) {
+                showAlert('Payment successful! Booking confirmed.', 'success');
+                localStorage.removeItem('pendingBooking');
+                setTimeout(() => {
+                    window.location.href = 'my-bookings.html';
+                }, 2000);
+            } else {
+                showAlert('Payment failed. Please try again.', 'error');
+            }
+        }
+        
+        loadBooking();
+    </script>
+</body>
+</html>

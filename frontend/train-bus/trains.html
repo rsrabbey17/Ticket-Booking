@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Trains - TicketBooking</title>
+    <link rel="stylesheet" href="../common/styles.css">
+    <style>
+        .train-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            border-left: 4px solid #f59e0b;
+        }
+        .train-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .train-info {
+            flex: 2;
+        }
+        .train-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+        .train-number {
+            color: var(--gray-color);
+            font-size: 14px;
+        }
+        .train-stations {
+            margin: 10px 0;
+        }
+        .station {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .train-time {
+            color: var(--gray-color);
+            font-size: 14px;
+        }
+        .train-price {
+            text-align: right;
+        }
+        .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+        .seat-selector {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--light-color);
+            border-radius: 8px;
+        }
+        .seat-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .seat-btn {
+            width: 50px;
+            padding: 10px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .seat-btn:hover {
+            border-color: #f59e0b;
+            transform: scale(1.05);
+        }
+        .seat-btn.selected {
+            background: #f59e0b;
+            color: white;
+            border-color: #f59e0b;
+        }
+        .class-selector {
+            margin: 15px 0;
+        }
+        .class-selector select {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../shared-pages/index.html" class="logo">🚂 TicketBooking</a>
+            <div class="nav-links">
+                <a href="../air-tickets/search.html">✈️ Flights</a>
+                <a href="trains.html">🚂 Trains</a>
+                <a href="buses.html">🚌 Buses</a>
+                <a href="../shared-pages/my-bookings.html">📋 My Bookings</a>
+                <a href="#" onclick="logout()">🚪 Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="search-form" style="background: white; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
+            <h2>Search Trains</h2>
+            <form id="searchForm">
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label>From Station</label>
+                        <input type="text" id="from" required placeholder="Enter departure station">
+                    </div>
+                    <div class="form-group">
+                        <label>To Station</label>
+                        <input type="text" id="to" required placeholder="Enter arrival station">
+                    </div>
+                    <div class="form-group">
+                        <label>Travel Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Class</label>
+                        <select id="classType">
+                            <option value="SLEEPER">Sleeper (SL)</option>
+                            <option value="AC">AC (1A/2A/3A)</option>
+                            <option value="GENERAL">General (GN)</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Search Trains</button>
+            </form>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+    
+    <div id="seatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select Seats</h3>
+                <button class="modal-close" onclick="closeSeatModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="seatSelector"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSeatModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmBooking()">Confirm Booking</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../common/utils.js"></script>
+    <script>
+        let selectedTrain = null;
+        let selectedSeats = [];
+        
+        // Set default date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('date').value = tomorrow.toISOString().split('T')[0];
+        
+        async function searchTrains(e) {
+            e.preventDefault();
+            
+            const from = document.getElementById('from').value;
+            const to = document.getElementById('to').value;
+            const date = document.getElementById('date').value;
+            const classType = document.getElementById('classType').value;
+            
+            const searchDate = new Date(date);
+            searchDate.setHours(12, 0, 0);
+            const formattedDate = searchDate.toISOString();
+            
+            showLoading();
+            const result = await apiRequest(`/trains/search?from=${from}&to=${to}&date=${formattedDate}`);
+            hideLoading();
+            
+            const container = document.getElementById('results');
+            
+            if (result && result.success && result.data.data && result.data.data.length > 0) {
+                displayTrains(result.data.data);
+            } else {
+                container.innerHTML = '<div class="alert alert-info">No trains found for your search criteria. Please try different stations or date.</div>';
+            }
+        }
+        
+        function displayTrains(trains) {
+            const container = document.getElementById('results');
+            container.innerHTML = `<h3>Found ${trains.length} Trains</h3>` + 
+                trains.map(train => `
+                    <div class="train-card">
+                        <div class="train-info">
+                            <div>
+                                <span class="train-name">${train.trainName}</span>
+                                <span class="train-number">(${train.trainNumber})</span>
+                            </div>
+                            <div class="train-stations">
+                                <span class="station">${train.fromStation}</span> 
+                                → 
+                                <span class="station">${train.toStation}</span>
+                            </div>
+                            <div class="train-time">
+                                Departure: ${formatDate(train.departureTime)}<br>
+                                Arrival: ${formatDate(train.arrivalTime)}
+                            </div>
+                            <div>Available Seats: ${train.availableSeats} (${train.classType} Class)</div>
+                        </div>
+                        <div class="train-price">
+                            <div class="price">${formatCurrency(train.price)}</div>
+                            <button class="btn btn-primary" onclick="showSeatSelection(${JSON.stringify(train).replace(/"/g, '&quot;')})">Select Seats</button>
+                        </div>
+                    </div>
+                `).join('');
+        }
+        
+        function showSeatSelection(train) {
+            if (!isLoggedIn()) {
+                showAlert('Please login to book tickets', 'error');
+                window.location.href = '../shared-pages/login.html';
+                return;
+            }
+            
+            selectedTrain = train;
+            selectedSeats = [];
+            
+            const maxSeats = Math.min(train.availableSeats, 6);
+            let seatHtml = `
+                <div class="seat-selector">
+                    <h4>Select Seats (Max ${maxSeats} seats)</h4>
+                    <p>Available seats: ${train.availableSeats}</p>
+                    <div class="seat-buttons" id="seatButtons">
+            `;
+            
+            for (let i = 1; i <= maxSeats; i++) {
+                seatHtml += `<button class="seat-btn" onclick="toggleSeat(${i})">Seat ${i}</button>`;
+            }
+            
+            seatHtml += `
+                    </div>
+                    <div class="class-selector">
+                        <label>Class: ${train.classType}</label>
+                    </div>
+                    <div class="selected-info" id="selectedInfo"></div>
+                </div>
+            `;
+            
+            document.getElementById('seatSelector').innerHTML = seatHtml;
+            document.getElementById('seatModal').classList.add('active');
+        }
+        
+        function toggleSeat(seatNumber) {
+            const index = selectedSeats.indexOf(seatNumber);
+            if (index === -1) {
+                if (selectedSeats.length < Math.min(selectedTrain.availableSeats, 6)) {
+                    selectedSeats.push(seatNumber);
+                } else {
+                    showAlert(`Maximum ${Math.min(selectedTrain.availableSeats, 6)} seats allowed`, 'warning');
+                    return;
+                }
+            } else {
+                selectedSeats.splice(index, 1);
+            }
+            
+            // Update button styling
+            document.querySelectorAll('.seat-btn').forEach((btn, idx) => {
+                if (selectedSeats.includes(idx + 1)) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+            
+            document.getElementById('selectedInfo').innerHTML = `
+                <strong>Selected Seats:</strong> ${selectedSeats.length > 0 ? selectedSeats.join(', ') : 'None'}
+                <br>
+                <strong>Total Price:</strong> ${formatCurrency(selectedTrain.price * selectedSeats.length)}
+            `;
+        }
+        
+        async function confirmBooking() {
+            if (selectedSeats.length === 0) {
+                showAlert('Please select at least one seat', 'warning');
+                return;
+            }
+            
+            const bookingData = {
+                transportType: 'TRAIN',
+                transportId: selectedTrain.id,
+                numberOfSeats: selectedSeats.length,
+                seatNumbers: selectedSeats.join(',')
+            };
+            
+            showLoading();
+            const result = await apiRequest('/bookings', {
+                method: 'POST',
+                body: JSON.stringify(bookingData)
+            });
+            hideLoading();
+            
+            if (result && result.success) {
+                showAlert('Booking created! Proceed to payment.', 'success');
+                localStorage.setItem('pendingBooking', JSON.stringify(result.data.data));
+                closeSeatModal();
+                window.location.href = '../shared-pages/payment.html';
+            } else {
+                showAlert('Booking failed: ' + (result?.data?.message || 'Unknown error'), 'error');
+            }
+        }
+        
+        function closeSeatModal() {
+            document.getElementById('seatModal').classList.remove('active');
+            selectedTrain = null;
+            selectedSeats = [];
+        }
+        
+        function logout() {
+            removeAuthToken();
+            window.location.href = '../shared-pages/index.html';
+        }
+        
+        document.getElementById('searchForm').addEventListener('submit', searchTrains);
+        
+        // Check login status
+        if (!isLoggedIn()) {
+            showAlert('Please login to book trains', 'info');
+        }
+    </script>
+</body>
+</html>

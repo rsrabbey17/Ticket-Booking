@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Buses - TicketBooking</title>
+    <link rel="stylesheet" href="../common/styles.css">
+    <style>
+        .bus-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            border-left: 4px solid #10b981;
+        }
+        .bus-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .bus-info {
+            flex: 2;
+        }
+        .bus-operator {
+            font-size: 18px;
+            font-weight: bold;
+            color: #10b981;
+        }
+        .bus-number {
+            color: var(--gray-color);
+            font-size: 14px;
+        }
+        .bus-route {
+            margin: 10px 0;
+        }
+        .city {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .bus-time {
+            color: var(--gray-color);
+            font-size: 14px;
+        }
+        .bus-price {
+            text-align: right;
+        }
+        .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #10b981;
+        }
+        .bus-type {
+            display: inline-block;
+            padding: 4px 8px;
+            background: var(--light-color);
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .seat-layout {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 300px;
+            margin: 20px auto;
+        }
+        .bus-seat {
+            background: var(--light-color);
+            border: 2px solid var(--gray-light);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        .bus-seat:hover {
+            transform: scale(1.05);
+            border-color: #10b981;
+        }
+        .bus-seat.selected {
+            background: #10b981;
+            border-color: #059669;
+            color: white;
+        }
+        .bus-seat.booked {
+            background: #ef4444;
+            border-color: #dc2626;
+            color: white;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .bus-seat.available:hover {
+            background: #34d399;
+            border-color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../shared-pages/index.html" class="logo">🚌 TicketBooking</a>
+            <div class="nav-links">
+                <a href="../air-tickets/search.html">✈️ Flights</a>
+                <a href="trains.html">🚂 Trains</a>
+                <a href="buses.html">🚌 Buses</a>
+                <a href="../shared-pages/my-bookings.html">📋 My Bookings</a>
+                <a href="#" onclick="logout()">🚪 Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="search-form" style="background: white; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
+            <h2>Search Buses</h2>
+            <form id="searchForm">
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label>From City</label>
+                        <input type="text" id="from" required placeholder="Enter departure city">
+                    </div>
+                    <div class="form-group">
+                        <label>To City</label>
+                        <input type="text" id="to" required placeholder="Enter arrival city">
+                    </div>
+                    <div class="form-group">
+                        <label>Travel Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Bus Type</label>
+                        <select id="busType">
+                            <option value="">All Types</option>
+                            <option value="AC">AC Bus</option>
+                            <option value="NON_AC">Non-AC Bus</option>
+                            <option value="SLEEPER">Sleeper Bus</option>
+                            <option value="SEATER">Seater Bus</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Search Buses</button>
+            </form>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+    
+    <div id="seatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select Seats</h3>
+                <button class="modal-close" onclick="closeSeatModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="seatSelector"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSeatModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmBooking()">Confirm Booking</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../common/utils.js"></script>
+    <script>
+        let selectedBus = null;
+        let selectedSeats = [];
+        
+        // Set default date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('date').value = tomorrow.toISOString().split('T')[0];
+        
+        async function searchBuses(e) {
+            e.preventDefault();
+            
+            const from = document.getElementById('from').value;
+            const to = document.getElementById('to').value;
+            const date = document.getElementById('date').value;
+            const busType = document.getElementById('busType').value;
+            
+            const searchDate = new Date(date);
+            searchDate.setHours(12, 0, 0);
+            const formattedDate = searchDate.toISOString();
+            
+            showLoading();
+            const result = await apiRequest(`/buses/search?from=${from}&to=${to}&date=${formattedDate}`);
+            hideLoading();
+            
+            const container = document.getElementById('results');
+            
+            if (result && result.success && result.data.data && result.data.data.length > 0) {
+                let buses = result.data.data;
+                if (busType) {
+                    buses = buses.filter(bus => bus.busType === busType);
+                }
+                displayBuses(buses);
+            } else {
+                container.innerHTML = '<div class="alert alert-info">No buses found for your search criteria. Please try different cities or date.</div>';
+            }
+        }
+        
+        function displayBuses(buses) {
+            const container = document.getElementById('results');
+            if (buses.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No buses match your filter criteria.</div>';
+                return;
+            }
+            
+            container.innerHTML = `<h3>Found ${buses.length} Buses</h3>` + 
+                buses.map(bus => `
+                    <div class="bus-card">
+                        <div class="bus-info">
+                            <div>
+                                <span class="bus-operator">${bus.operator}</span>
+                                <span class="bus-number">(${bus.busNumber})</span>
+                            </div>
+                            <div class="bus-route">
+                                <span class="city">${bus.fromCity}</span> 
+                                → 
+                                <span class="city">${bus.toCity}</span>
+                            </div>
+                            <div class="bus-time">
+                                Departure: ${formatDate(bus.departureTime)}<br>
+                                Arrival: ${formatDate(bus.arrivalTime)}<br>
+                                Duration: ${getDuration(bus.departureTime, bus.arrivalTime)}
+                            </div>
+                            <div>
+                                <span class="bus-type">${bus.busType} Bus</span>
+                                <span class="bus-type">Available: ${bus.availableSeats} seats</span>
+                            </div>
+                        </div>
+                        <div class="bus-price">
+                            <div class="price">${formatCurrency(bus.price)}</div>
+                            <button class="btn btn-primary" onclick="showSeatLayout(${JSON.stringify(bus).replace(/"/g, '&quot;')})">Select Seats</button>
+                        </div>
+                    </div>
+                `).join('');
+        }
+        
+        function getDuration(departure, arrival) {
+            const dep = new Date(departure);
+            const arr = new Date(arrival);
+            const diff = Math.abs(arr - dep);
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            return `${hours}h ${minutes}m`;
+        }
+        
+        function showSeatLayout(bus) {
+            if (!isLoggedIn()) {
+                showAlert('Please login to book tickets', 'error');
+                window.location.href = '../shared-pages/login.html';
+                return;
+            }
+            
+            selectedBus = bus;
+            selectedSeats = [];
+            
+            const totalSeats = Math.min(bus.availableSeats, 40);
+            let seatHtml = `
+                <h4>Select Your Seats</h4>
+                <p>Available seats: ${bus.availableSeats} | Price per seat: ${formatCurrency(bus.price)}</p>
+                <div class="seat-layout" id="seatLayout">
+            `;
+            
+            // Generate seat layout (4 columns)
+            for (let i = 1; i <= totalSeats; i++) {
+                const seatNumber = i;
+                seatHtml += `
+                    <div class="bus-seat available" onclick="toggleBusSeat(${seatNumber})" data-seat="${seatNumber}">
+                        ${seatNumber}
+                    </div>
+                `;
+                if (i % 4 === 0 && i !== totalSeats) {
+                    seatHtml += `<div style="grid-column: span 4;"></div>`;
+                }
+            }
+            
+            seatHtml += `
+                </div>
+                <div class="selected-info" id="selectedInfo" style="margin-top: 20px;"></div>
+            `;
+            
+            document.getElementById('seatSelector').innerHTML = seatHtml;
+            document.getElementById('seatModal').classList.add('active');
+        }
+        
+        function toggleBusSeat(seatNumber) {
+            const seatElement = document.querySelector(`[data-seat="${seatNumber}"]`);
+            const index = selectedSeats.indexOf(seatNumber);
+            
+            if (index === -1) {
+                if (selectedSeats.length < Math.min(selectedBus.availableSeats, 6)) {
+                    selectedSeats.push(seatNumber);
+                    seatElement.classList.add('selected');
+                } else {
+                    showAlert(`Maximum ${Math.min(selectedBus.availableSeats, 6)} seats allowed per booking`, 'warning');
+                    return;
+                }
+            } else {
+                selectedSeats.splice(index, 1);
+                seatElement.classList.remove('selected');
+            }
+            
+            document.getElementById('selectedInfo').innerHTML = `
+                <strong>Selected Seats:</strong> ${selectedSeats.length > 0 ? selectedSeats.join(', ') : 'None'}
+                <br>
+                <strong>Total Price:</strong> ${formatCurrency(selectedBus.price * selectedSeats.length)}
+            `;
+        }
+        
+        async function confirmBooking() {
+            if (selectedSeats.length === 0) {
+                showAlert('Please select at least one seat', 'warning');
+                return;
+            }
+            
+            const bookingData = {
+                transportType: 'BUS',
+                transportId: selectedBus.id,
+                numberOfSeats: selectedSeats.length,
+                seatNumbers: selectedSeats.join(',')
+            };
+            
+            showLoading();
+            const result = await apiRequest('/bookings', {
+                method: 'POST',
+                body: JSON.stringify(bookingData)
+            });
+            hideLoading();
+            
+            if (result && result.success) {
+                showAlert('Booking created! Proceed to payment.', 'success');
+                localStorage.setItem('pendingBooking', JSON.stringify(result.data.data));
+                closeSeatModal();
+                window.location.href = '../shared-pages/payment.html';
+            } else {
+                showAlert('Booking failed: ' + (result?.data?.message || 'Unknown error'), 'error');
+            }
+        }
+        
+        function closeSeatModal() {
+            document.getElementById('seatModal').classList.remove('active');
+            selectedBus = null;
+            selectedSeats = [];
+        }
+        
+        function logout() {
+            removeAuthToken();
+            window.location.href = '../shared-pages/index.html';
+        }
+        
+        document.getElementById('searchForm').addEventListener('submit', searchBuses);
+        
+        // Check login status
+        if (!isLoggedIn()) {
+            showAlert('Please login to book buses', 'info');
+        }
+    </script>
+</body>
+</html>
